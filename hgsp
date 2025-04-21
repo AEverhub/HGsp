@@ -1,0 +1,61 @@
+local Vehicles = workspace.Vehicles
+
+local function Notification(Title, Description)
+    game:GetService("StarterGui"):SetCore("SendNotification", {
+        Title = Title,
+        Text = Description
+    })
+end
+
+local Gui = Instance.new("ScreenGui")
+Gui.Parent = game.Players.LocalPlayer.PlayerGui
+Gui.ResetOnSpawn = false
+
+local Button = Instance.new("TextButton", Gui)
+Button.BackgroundTransparency = 1
+Button.TextScaled = true
+Button.TextColor3 = Color3.fromRGB(255, 255, 255)
+Button.Text = "傳送到我的車"
+Button.Size = UDim2.new(0.2, 0, 0.05, 0)
+Button.Position = UDim2.new(0.4, 0, 0, 0)
+
+local function SetupCarInteractions()
+    for _, vehicle in ipairs(Vehicles:GetChildren()) do
+        local clickDetector = vehicle:FindFirstChild("ClickDetector")
+        if not clickDetector then
+            clickDetector = Instance.new("ClickDetector")
+            clickDetector.Parent = vehicle
+            clickDetector.MaxActivationDistance = math.huge
+        end
+
+        if not clickDetector:GetAttribute("Connected") then
+            clickDetector.MouseClick:Connect(function()
+                local car = clickDetector.Parent
+                if car and car:FindFirstChild("DriveSeat") then
+                    local seat = car.DriveSeat
+                    if seat.Occupant then
+                        local occupantName = seat.Occupant.Parent.Name
+                        Notification("錯誤", "你嘗試進入的車輛目前由 " .. occupantName .. " 駕駛。")
+                    else
+                        seat:Sit(game.Players.LocalPlayer.Character.Humanoid)
+                    end
+                end
+            end)
+            clickDetector:SetAttribute("Connected", true)
+        end
+    end
+end
+
+Button.Activated:Connect(function()
+    if Vehicles:FindFirstChild(game.Players.LocalPlayer.Name) then
+        Vehicles[game.Players.LocalPlayer.Name].DriveSeat:Sit(game.Players.LocalPlayer.Character.Humanoid)
+    else
+        Notification("提示", "找不到你的車輛")
+    end
+end)
+
+task.spawn(function()
+    while task.wait(0.5) do
+        SetupCarInteractions()
+    end
+end)
